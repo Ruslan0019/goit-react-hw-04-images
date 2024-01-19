@@ -12,12 +12,10 @@ const App = () => {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [modalImageUrl, setModalImageUrl] = useState(null);
-  const [initialLoad, setInitialLoad] = useState(true);
-  const [requestedPage, setRequestedPage] = useState(1);
 
   useEffect(() => {
-    if (!initialLoad) {
-      fetchData(query, requestedPage)
+    if (query !== '') {
+      fetchData(query, page)
         .then(data => {
           setImages(prevImages => [...prevImages, ...data]);
         })
@@ -28,7 +26,7 @@ const App = () => {
           setLoading(false);
         });
     }
-  }, [query, requestedPage, initialLoad]);
+  }, [query, page]);
 
   const handleSubmit = newQuery => {
     const trimmedQuery = newQuery.trim();
@@ -37,15 +35,12 @@ const App = () => {
       setImages([]);
       setPage(1);
       setLoading(true);
-      setInitialLoad(false);
-      setRequestedPage(1);
     }
   };
 
   const loadMore = () => {
     setLoading(true);
     setPage(prevPage => prevPage + 1);
-    setRequestedPage(page + 1);
   };
 
   const openModal = imageUrl => {
