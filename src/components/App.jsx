@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SearchBar from './SearchBar/SearchBar';
 import ImageGallery from './ImageGallery/ImageGallery';
 import Loader from './Loader/Loader';
 import Button from './Button/Button';
 import Modal from './Modal/Modal';
+import fetchData from './api/api';
 
 const App = () => {
   const [query, setQuery] = useState('');
@@ -11,32 +12,40 @@ const App = () => {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [modalImageUrl, setModalImageUrl] = useState(null);
+  const [initialLoad, setInitialLoad] = useState(true);
+  const [requestedPage, setRequestedPage] = useState(1);
+
+  useEffect(() => {
+    if (!initialLoad) {
+      fetchData(query, requestedPage)
+        .then(data => {
+          setImages(prevImages => [...prevImages, ...data]);
+        })
+        .catch(error => {
+          console.error('Error while receiving data:', error);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [query, requestedPage, initialLoad]);
 
   const handleSubmit = newQuery => {
-    setQuery(newQuery);
-    setImages([]);
-    setPage(1);
-    fetchData(newQuery, 1);
-  };
-
-  const fetchData = async (query, pageNumber) => {
-    try {
+    const trimmedQuery = newQuery.trim();
+    if (trimmedQuery !== '') {
+      setQuery(trimmedQuery);
+      setImages([]);
+      setPage(1);
       setLoading(true);
-      const response = await fetch(
-        `https://pixabay.com/api/?q=${query}&page=${pageNumber}&key=40489521-2d233b9ce133180f8f85686cd&image_type=photo&orientation=horizontal&per_page=12`
-      );
-      const data = await response.json();
-      setImages(prevImages => [...prevImages, ...data.hits]);
-      setPage(pageNumber + 1);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
+      setInitialLoad(false);
+      setRequestedPage(1);
     }
   };
 
   const loadMore = () => {
-    fetchData(query, page);
+    setLoading(true);
+    setPage(prevPage => prevPage + 1);
+    setRequestedPage(page + 1);
   };
 
   const openModal = imageUrl => {
@@ -47,12 +56,20 @@ const App = () => {
     setModalImageUrl(null);
   };
 
+  const allImagesLoaded = images.length === 0 && !loading;
+  const noMoreImagesToLoad =
+    allImagesLoaded ||
+    (page > 1 && images.length % 12 !== 0) ||
+    images.length < 12;
+
   return (
     <div>
       <SearchBar onSubmit={handleSubmit} />
       <ImageGallery images={images} onImageClick={openModal} />
       {loading && <Loader />}
-      {images.length > 0 && <Button onClick={loadMore} />}
+      {!noMoreImagesToLoad && images.length >= 12 && (
+        <Button onClick={loadMore} />
+      )}
       {modalImageUrl && <Modal imageUrl={modalImageUrl} onClose={closeModal} />}
     </div>
   );
