@@ -15,6 +15,7 @@ const App = () => {
 
   useEffect(() => {
     if (query !== '') {
+      setLoading(true);
       fetchData(query, page)
         .then(data => {
           setImages(prevImages => [...prevImages, ...data]);
@@ -34,12 +35,10 @@ const App = () => {
       setQuery(trimmedQuery);
       setImages([]);
       setPage(1);
-      setLoading(true);
     }
   };
 
   const loadMore = () => {
-    setLoading(true);
     setPage(prevPage => prevPage + 1);
   };
 
